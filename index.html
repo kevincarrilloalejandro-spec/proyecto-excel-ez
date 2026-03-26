@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Iniciar sesión | Excel EZ</title>
+    <meta name="description" content="Gestiona tus hojas de cálculo sin complicaciones con Excel EZ. Inicia sesión para acceder a tu panel.">
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+    
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="background-grid"></div>
+    <div class="radial-gradient"></div>
+
+    <main class="login-container">
+        <div id="successMessage" class="register-hint" style="display: none; background: rgba(0, 200, 150, 0.1); border: 1px solid var(--primary); padding: 1rem; border-radius: 12px; margin-bottom: 1.5rem; color: var(--primary);">
+            ¡Registro exitoso! Ya puedes iniciar sesión.
+        </div>
+        <header class="logo-section">
+            <div class="logo">
+                <i data-lucide="layout-grid" class="logo-icon"></i>
+                <h1>Excel EZ</h1>
+            </div>
+            <p class="tagline">Tu hoja de cálculo, sin complicaciones.</p>
+        </header>
+
+        <section class="form-card">
+            <form id="loginForm" novalidate>
+                <div class="input-group">
+                    <label for="email">Correo electrónico</label>
+                    <div class="input-wrapper">
+                        <i data-lucide="mail" class="field-icon"></i>
+                        <input type="email" id="email" placeholder="ejemplo@correo.com" required>
+                    </div>
+                    <span class="error-message" id="emailError"></span>
+                </div>
+
+                <div class="input-group">
+                    <label for="password">Contraseña</label>
+                    <div class="input-wrapper">
+                        <i data-lucide="lock" class="field-icon"></i>
+                        <input type="password" id="password" placeholder="••••••••" required>
+                        <button type="button" class="toggle-password" id="togglePassword">
+                            <i data-lucide="eye" id="eyeIcon"></i>
+                        </button>
+                    </div>
+                    <span class="error-message" id="passwordError"></span>
+                </div>
+
+                <div class="form-footer">
+                    <a href="forgot.html" class="forgot-link">¿Olvidaste tu contraseña?</a>
+                </div>
+
+                <button type="submit" class="btn-primary" id="loginBtn">
+                    <span class="btn-text">Iniciar sesión</span>
+                    <div class="spinner" id="btnSpinner"></div>
+                </button>
+
+                <div class="separator">
+                    <span>o continúa con</span>
+                </div>
+
+                <button type="button" class="btn-google">
+                    <img src="https://www.gstatic.com/images/branding/product/1x/gsa_512dp.png" alt="Google Logo" class="google-logo">
+                    Continuar con Google
+                </button>
+
+                <p class="register-hint">
+                    ¿No tienes cuenta? <a href="register.html">Regístrate</a>
+                </p>
+            </form>
+        </section>
+    </main>
+
+    <script src="auth.js"></script>
+    <script src="script.js"></script>
+    <script>
+        // Initialize Lucide icons
+        lucide.createIcons();
+    </script>
+</body>
+</html>

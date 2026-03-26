@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Recuperar contraseña | Excel EZ</title>
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+    
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="background-grid"></div>
+    <div class="radial-gradient"></div>
+
+    <main class="login-container">
+        <header class="logo-section">
+            <div class="logo">
+                <i data-lucide="layout-grid" class="logo-icon"></i>
+                <h1>Excel EZ</h1>
+            </div>
+            <p class="tagline">Recupera el acceso a tu cuenta.</p>
+        </header>
+
+        <section class="form-card">
+            <form id="forgotForm" novalidate>
+                <div class="input-group">
+                    <label for="email">Correo electrónico</label>
+                    <div class="input-wrapper">
+                        <i data-lucide="mail" class="field-icon"></i>
+                        <input type="email" id="email" placeholder="ejemplo@correo.com" required>
+                    </div>
+                    <span class="error-message" id="emailError"></span>
+                </div>
+
+                <div id="successMessage" class="register-hint" style="display: none; color: var(--primary); margin-bottom: 20px;">
+                    Si este correo está registrado, recibirás instrucciones para recuperar tu contraseña.
+                </div>
+
+                <button type="submit" class="btn-primary" id="btnRecover">
+                    <span class="btn-text">Enviar instrucciones</span>
+                    <div class="spinner" id="btnSpinner"></div>
+                </button>
+
+                <p class="register-hint">
+                    ¿Recordaste tu contraseña? <a href="index.html">Inicia sesión</a>
+                </p>
+            </form>
+        </section>
+    </main>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const form = document.getElementById('forgotForm');
+            const emailInput = document.getElementById('email');
+            const emailError = document.getElementById('emailError');
+            const successMsg = document.getElementById('successMessage');
+            const btn = document.getElementById('btnRecover');
+            const spinner = document.getElementById('btnSpinner');
+            const btnText = btn.querySelector('.btn-text');
+
+            lucide.createIcons();
+
+            form.addEventListener('submit', (e) => {
+                e.preventDefault();
+                
+                if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailInput.value)) {
+                    emailError.textContent = 'Correo inválido';
+                    emailError.classList.add('visible');
+                    return;
+                }
+
+                emailError.classList.remove('visible');
+                btn.disabled = true;
+                btnText.style.opacity = '0';
+                spinner.style.display = 'block';
+
+                setTimeout(() => {
+                    successMsg.style.display = 'block';
+                    btnSpinner.style.display = 'none';
+                    btnText.style.opacity = '1';
+                    btn.disabled = false;
+                }, 1500);
+            });
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard | Excel EZ</title>
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+    
+    <!-- Scripts -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
+    
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="dashboard.css">
+</head>
+<body class="dashboard-body">
+    <div class="background-grid"></div>
+    
+    <!-- Sidebar -->
+    <aside class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <div class="logo">
+                <i data-lucide="layout-grid" class="logo-icon"></i>
+                <span class="logo-text">Excel EZ</span>
+            </div>
+            <button class="mobile-close" id="mobileClose"><i data-lucide="x"></i></button>
+        </div>
+        
+        <nav class="sidebar-nav">
+            <a href="#" class="nav-item active" data-target="mi-excel">
+                <i data-lucide="bar-chart-3"></i>
+                <span>Mi Excel</span>
+            </a>
+            <a href="#" class="nav-item" data-target="consultas">
+                <i data-lucide="message-square"></i>
+                <span>Consultas</span>
+            </a>
+            <a href="#" class="nav-item" data-target="archivos">
+                <i data-lucide="folder-closed"></i>
+                <span>Mis archivos</span>
+            </a>
+            <a href="#" class="nav-item" data-target="config">
+                <i data-lucide="settings"></i>
+                <span>Configuración</span>
+            </a>
+        </nav>
+
+        <div class="sidebar-footer">
+            <button class="btn-logout" id="logoutBtn">
+                <i data-lucide="log-out"></i>
+                <span>Cerrar sesión</span>
+            </button>
+        </div>
+    </aside>
+
+    <!-- Main Content -->
+    <div class="main-wrapper">
+        <header class="dashboard-header">
+            <button class="mobile-toggle" id="mobileToggle"><i data-lucide="menu"></i></button>
+            <div class="header-search">
+                <i data-lucide="search"></i>
+                <input type="text" placeholder="Buscar en tus archivos...">
+            </div>
+            <div class="user-profile">
+                <span id="userName">Cargando...</span>
+                <div class="avatar">
+                    <i data-lucide="user"></i>
+                </div>
+            </div>
+        </header>
+
+        <main class="content-area">
+            <!-- Sección: Mi Excel -->
+            <section id="mi-excel" class="content-section active">
+                <div class="section-header">
+                    <h2 id="greeting">Hola, Usuario 👋</h2>
+                    <p>Gestiona tus hojas de cálculo de forma inteligente.</p>
+                </div>
+
+                <div class="excel-upload-wrapper">
+                    <!-- Drop Zone Principal -->
+                    <div class="drop-zone-extreme" id="dropZone">
+                        <div class="drop-zone-content">
+                            <i data-lucide="file-spreadsheet" id="uploadIcon"></i>
+                            <h3>Arrastra tu archivo Excel aquí</h3>
+                            <p>o haz clic para seleccionar (.xlsx, .xls, .csv)</p>
+                            <input type="file" id="fileInput" accept=".xlsx, .xls, .csv" hidden>
+                        </div>
+                        <div id="dropZoneOverlay" class="drop-zone-overlay" style="display: none; position: absolute; inset: 0; background: rgba(0, 200, 150, 0.1); align-items: center; justify-content: center; backdrop-filter: blur(4px); z-index: 5;">
+                            <h2 style="color: var(--primary);">¡Suelta para procesar!</h2>
+                        </div>
+                    </div>
+
+                    <!-- Historial Rápido -->
+                    <div class="card" style="padding: 1.5rem; display: flex; flex-direction: column; gap: 1rem;">
+                        <h4 style="display: flex; align-items: center; gap: 8px; margin: 0;">
+                            <i data-lucide="history" style="width: 18px;"></i> Recientes
+                        </h4>
+                        <div id="historyList" class="history-list">
+                            <!-- Inyectado por JS -->
+                            <p style="color: var(--text-muted); font-size: 0.8rem; text-align: center; padding: 1rem;">No hay archivos recientes.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <style>
+                    @keyframes spin { 100% { transform: rotate(360deg); } }
+                    .spin-icon { animation: spin 1s linear infinite; }
+                </style>
+                <!-- Animación de Carga -->
+                <div id="loadingOverlay" style="display: none; text-align: center; padding: 3rem; background: rgba(0,200,150,0.05); border-radius: 12px; border: 1px dashed var(--primary); margin-bottom: 1.5rem;">
+                    <i data-lucide="loader-2" class="spin-icon" style="color: var(--primary); width: 48px; height: 48px;"></i>
+                    <h3 style="color: var(--primary); margin-top: 15px; font-weight: 500;">Procesando archivo...</h3>
+                    <p style="color: var(--text-muted); font-size: 0.9rem;">Analizando filas, columnas y detectando estructura de datos</p>
+                </div>
+
+                <!-- Panel de Estadísticas (Oculto inicialmente) -->
+                <div id="excelStats" class="excel-stats-grid" style="display: none;">
+                    <div class="stat-card-mini">
+                        <span class="stat-value" id="totalRows">0</span>
+                        <span class="stat-label">Filas</span>
+                    </div>
+                    <div class="stat-card-mini">
+                        <span class="stat-value" id="totalCols">0</span>
+                        <span class="stat-label">Columnas</span>
+                    </div>
+                    <div class="stat-card-mini">
+                        <span class="stat-value" id="emptyCells">0</span>
+                        <span class="stat-label">Celdas Vacías</span>
+                    </div>
+                    <div class="stat-card-mini">
+                        <span class="stat-value" id="numericCols">0</span>
+                        <span class="stat-label">Cols. Numéricas</span>
+                    </div>
+                </div>
+
+                <!-- Vista Previa Avanzada -->
+                <div id="previewContainer" class="excel-preview-area" style="display: none;">
+                    <div class="section-header" style="margin-bottom: 1.5rem;">
+                        <div style="display: flex; align-items: center; gap: 15px;">
+                            <i data-lucide="file-text" style="color: var(--primary); width: 24px; height: 24px;"></i>
+                            <div>
+                                <h3 id="currentFileName" style="margin: 0;">archivo.xlsx</h3>
+                                <p id="currentFileMeta" style="font-size: 0.8rem; color: var(--text-muted); margin: 0;">Cargando...</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="sheet-tabs" id="sheetTabs">
+                        <!-- Pestañas generadas dinámicamente -->
+                    </div>
+
+                    <div class="table-toolbar">
+                        <div class="table-search">
+                            <i data-lucide="search"></i>
+                            <input type="text" id="tableSearch" placeholder="Filtrar datos en esta hoja...">
+                        </div>
+                        <div class="table-actions" style="display: flex; gap: 10px; align-items: center;">
+                            <span id="tableCounter" style="font-size: 0.8rem; color: var(--text-muted);">0 filas</span>
+                            <button id="exportBtn" class="btn-history-load" title="Exportar vista actual">
+                                <i data-lucide="download" style="width: 14px;"></i> Exportar
+                            </button>
+                            <button id="closePreview" class="btn-history-load" style="color: var(--error); border-color: rgba(255, 77, 77, 0.2);">
+                                <i data-lucide="x" style="width: 14px;"></i> Cerrar
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="table-container-fixed">
+                        <table class="excel-pro-table" id="excelTable"></table>
+                    </div>
+
+                    <!-- Puente con el Asistente -->
+                    <div class="assistant-bridge">
+                        <div>
+                            <h4 style="color: var(--primary); margin-bottom: 4px;">💬 ¿Necesitas ayuda con estos datos?</h4>
+                            <p style="font-size: 0.85rem; color: var(--text-muted); margin: 0;">Pregunta al asistente sobre fórmulas, tendencias o errores detectados.</p>
+                        </div>
+                        <button class="btn-primary" id="askAssistantBtn" style="width: auto; padding: 10px 20px;">
+                            Consultar IA
+                        </button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Sección: Consultas -->
+            <section id="consultas" class="content-section">
+                <div class="chat-container">
+                    <header class="chat-header">
+                        <i data-lucide="bot" class="ai-icon"></i>
+                        <div>
+                            <h3>Asistente Inteligente</h3>
+                            <span>IA experta en Excel (Local)</span>
+                        </div>
+                    </header>
+                    
+                    <!-- Banner de Contexto Activo -->
+                    <div id="contextBanner" style="display: none; background: rgba(0, 200, 150, 0.1); border-bottom: 1px solid var(--primary); padding: 10px 20px; align-items: center; justify-content: space-between; gap: 15px;">
+                        <div style="display: flex; align-items: center; gap: 8px; font-size: 0.8rem;">
+                            <i data-lucide="paperclip" style="width: 14px; color: var(--primary);"></i>
+                            <span>Contexto activo: <strong id="contextFileName" style="color: var(--primary);">archivo.xlsx</strong></span>
+                        </div>
+                        <button id="clearContextBtn" style="background: transparent; border: 1px solid rgba(255, 77, 77, 0.3); color: var(--error); padding: 4px 8px; border-radius: 4px; font-size: 0.7rem; cursor: pointer; display: flex; align-items: center; gap: 4px;">
+                            <i data-lucide="x" style="width: 12px;"></i> Quitar
+                        </button>
+                    </div>
+
+                    <div class="chat-messages" id="chatMessages">
+                        <!-- Mensajes cargados por JS -->
+                    </div>
+                    <!-- Suggestion Box se inserta aquí por JS -->
+                    <div class="chat-input-wrapper">
+                        <div class="chat-input-area">
+                            <textarea id="chatInput" placeholder="Escribe tu duda sobre Excel aquí..."></textarea>
+                            <button id="sendBtn" class="btn-send"><i data-lucide="send"></i></button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Sección: Mis archivos (Listado Completo) -->
+            <section id="archivos" class="content-section">
+                <div class="section-header">
+                    <h2>Explorador de Archivos</h2>
+                    <p>Historial completo de tus documentos cargados localmente.</p>
+                </div>
+                <div id="fullHistoryGrid" class="history-list" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 1.5rem;">
+                    <!-- Inyectado por JS -->
+                </div>
+            </section>
+
+            <!-- Sección: Configuración -->
+            <section id="config" class="content-section">
+                <div class="section-header">
+                    <h2>Configuración</h2>
+                    <p>Personaliza tu experiencia en Excel EZ.</p>
+                </div>
+                <div class="form-card" style="max-width: 500px; margin: 0; animation: none;">
+                    <div class="setting-item" style="display: flex; justify-content: space-between; align-items: center; padding: 15px 0; border-bottom: 1px solid var(--border);">
+                        <span>Privacidad de Datos</span>
+                        <div style="color: var(--primary); font-size: 0.8rem;">🔒 Procesamiento Local</div>
+                    </div>
+                    <div class="setting-item" style="display: flex; justify-content: space-between; align-items: center; padding: 15px 0; border-bottom: 1px solid var(--border);">
+                        <span>Exportación Automática</span>
+                        <div style="color: var(--text-muted); font-size: 0.8rem;">Desactivado</div>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <script src="auth.js"></script>
+    <script src="dashboard.js"></script>
+</body>
+</html>
