@@ -2,6 +2,9 @@ document.addEventListener('DOMContentLoaded', () => {
     // 1. Verificar sesión
     const currentUser = AUTH.checkSession();
     if (!currentUser) return;
+    
+    // Support old "name" or new "nombre"
+    const displayNombre = currentUser.nombre || currentUser.name || "Usuario";
 
     // UI Elements
     const userNameEl = document.getElementById('userName');
@@ -52,8 +55,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const closePreviewBtn = document.getElementById('closePreview');
 
     // Initialize UI
-    userNameEl.textContent = currentUser.name;
-    greetingEl.textContent = `Hola, ${currentUser.name.split(' ')[0]} 👋`;
+    userNameEl.textContent = displayNombre;
+    greetingEl.textContent = `Hola, ${displayNombre.split(' ')[0]} 👋`;
     renderHistory();
     renderContextBanner();
     renderSuggestions();

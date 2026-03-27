@@ -11,10 +11,20 @@ document.addEventListener('DOMContentLoaded', () => {
     const btnSpinner = document.getElementById('btnSpinner');
     const successMsg = document.getElementById('successMessage');
 
-    // Check for "registered" parameter
-    const urlParams = new URLSearchParams(window.location.search);
-    if (urlParams.get('registered') === 'true') {
+    // Check for registration success
+    const registroExitoso = sessionStorage.getItem('registro_exitoso');
+    const emailRegistrado = sessionStorage.getItem('email_registrado');
+
+    if (registroExitoso === 'true') {
+        successMsg.innerHTML = '✅ ¡Cuenta creada exitosamente!<br>Ahora puedes iniciar sesión con tu correo.';
         successMsg.style.display = 'block';
+        
+        // Pre-rellenar
+        emailInput.value = emailRegistrado || '';
+        
+        // Limpiar flags
+        sessionStorage.removeItem('registro_exitoso');
+        sessionStorage.removeItem('email_registrado');
     }
 
     // Initialize Lucide icons
@@ -38,7 +48,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Show/Hide error functions
     const showError = (element, message, input) => {
-        element.textContent = message;
+        element.innerHTML = message;
         element.classList.add('visible');
         input.classList.add('invalid');
     };
@@ -97,9 +107,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 const result = AUTH.login(email, password);
                 
                 if (result.success) {
-                    window.location.href = 'dashboard.html';
+                    window.location.href = './dashboard.html';
                 } else {
-                    showError(passwordError, result.message, passwordInput);
+                    if (result.errorType === 'email') {
+                        showError(emailError, result.message, emailInput);
+                    } else {
+                        showError(passwordError, result.message, passwordInput);
+                    }
                     loginBtn.disabled = false;
                     btnText.style.opacity = '1';
                     btnSpinner.style.display = 'none';

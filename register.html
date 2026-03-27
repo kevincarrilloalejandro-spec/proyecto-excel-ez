@@ -113,7 +113,7 @@
 
             // Help functions
             const showError = (el, msg, input) => {
-                el.textContent = msg;
+                el.innerHTML = msg;
                 el.classList.add('visible');
                 input.classList.add('invalid');
             };
@@ -166,10 +166,15 @@
                         const result = AUTH.register(nameInput.value, emailInput.value, passwordInput.value);
                         
                         if (result.success) {
-                            alert('¡Cuenta creada correctamente! Serás redirigido al inicio de sesión.');
-                            window.location.href = 'index.html?registered=true';
+                            sessionStorage.setItem('registro_exitoso', 'true');
+                            sessionStorage.setItem('email_registrado', emailInput.value);
+                            window.location.href = './index.html';
                         } else {
-                            showError(emailError, result.message, emailInput);
+                            if (result.errorType === 'email') {
+                                showError(emailError, result.message, emailInput);
+                            } else {
+                                showError(emailError, result.message || 'Error en el registro', emailInput);
+                            }
                             registerBtn.disabled = false;
                             btnText.style.opacity = '1';
                             btnSpinner.style.display = 'none';
