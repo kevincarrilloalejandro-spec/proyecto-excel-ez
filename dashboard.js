@@ -15,6 +15,17 @@ document.addEventListener('DOMContentLoaded', () => {
     const mobileToggle = document.getElementById('mobileToggle');
     const mobileClose = document.getElementById('mobileClose');
 
+    // --- Helper: Excel column letter (A, B, ... Z, AA, AB...) ---
+    function getExcelColumnName(index) {
+        let name = '';
+        let i = index;
+        while (i >= 0) {
+            name = String.fromCharCode((i % 26) + 65) + name;
+            i = Math.floor(i / 26) - 1;
+        }
+        return name;
+    }
+
     // --- Advanced Excel State ---
     let currentWorkbook = null;
     let currentSheetData = [];
@@ -30,7 +41,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const tableSearch = document.getElementById('tableSearch');
     const tableCounter = document.getElementById('tableCounter');
     const exportBtn = document.getElementById('exportBtn');
-    const askAssistantBtn = document.getElementById('askAssistantBtn');
+    const btnConsultarIA = document.getElementById('btnConsultarIA');
     const historyList = document.getElementById('historyList');
     const fullHistoryGrid = document.getElementById('fullHistoryGrid');
     const currentFileNameEl = document.getElementById('currentFileName');
@@ -38,6 +49,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const contextBanner = document.getElementById('contextBanner');
     const contextFileName = document.getElementById('contextFileName');
     const clearContextBtn = document.getElementById('clearContextBtn');
+    const closePreviewBtn = document.getElementById('closePreview');
 
     // Initialize UI
     userNameEl.textContent = currentUser.name;
@@ -48,19 +60,25 @@ document.addEventListener('DOMContentLoaded', () => {
     lucide.createIcons();
 
     // --- Navigation Logic ---
+    function mostrarSeccion(targetId) {
+        navItems.forEach(nav => nav.classList.remove('active'));
+        const navTarget = document.querySelector(`.nav-item[data-target="${targetId}"]`);
+        if (navTarget) navTarget.classList.add('active');
+        sections.forEach(sec => {
+            sec.classList.remove('active');
+            if (sec.id === targetId) sec.classList.add('active');
+        });
+        if (window.innerWidth <= 1024) sidebar.classList.remove('open');
+        // Refresh history grid if needed
+        if (targetId === 'archivos') renderFullHistory();
+        // Check if consultas should load context
+        if (targetId === 'consultas') activarContextoSiPendiente();
+    }
+
     navItems.forEach(item => {
         item.addEventListener('click', (e) => {
             e.preventDefault();
-            const target = item.getAttribute('data-target');
-            navItems.forEach(nav => nav.classList.remove('active'));
-            item.classList.add('active');
-            sections.forEach(sec => {
-                sec.classList.remove('active');
-                if (sec.id === target) sec.classList.add('active');
-            });
-            if (window.innerWidth <= 1024) sidebar.classList.remove('open');
-            // Refresh history grid if needed
-            if (target === 'archivos') renderFullHistory();
+            mostrarSeccion(item.getAttribute('data-target'));
         });
     });
 
@@ -271,15 +289,12 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     // ─────────────────────────────────────────
-    // ASSISTANT BRIDGE — "Consultar IA" button
+    // CAPTURAR DATOS DE LA TABLA VISIBLE
     // ─────────────────────────────────────────
-    askAssistantBtn.addEventListener('click', () => {
+    function capturarDatosTabla() {
         const headers = (currentSheetData[0] || []).map(h => String(h));
         const rawRows = currentSheetData.slice(1);
-        if (headers.length === 0) {
-            alert('No hay datos cargados. Sube un archivo primero.');
-            return;
-        }
+        if (headers.length === 0) return null;
 
         // Convert rows to keyed objects: { ACTIVOS: 123, GASTOS: 456 }
         const filas = rawRows.map(row =>
@@ -288,7 +303,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const sheetLabel = currentFileMetaEl.textContent.replace('Hoja: ', '').split(' ·')[0] || 'Hoja1';
 
-        window.excelContexto = {
+        return {
             activo: true,
             nombreArchivo: currentFileName,
             hoja: sheetLabel,
@@ -297,39 +312,86 @@ document.addEventListener('DOMContentLoaded', () => {
             totalFilas: filas.length,
             totalColumnas: headers.length
         };
+    }
 
-        // Persist (without filas to avoid quota issues on large files)
-        const toSave = { ...window.excelContexto, filas: filas.slice(0, 200) };
-        try { localStorage.setItem(`context_${currentUser.email}`, JSON.stringify(toSave)); } catch(e) {}
+    // ─────────────────────────────────────────
+    // ACTIVAR CONTEXTO CUANDO SE ABRE CONSULTAS
+    // ─────────────────────────────────────────
+    function activarContextoSiPendiente() {
+        const debeAbrir = sessionStorage.getItem('abrirConsultasConContexto');
+        const ctxRaw = sessionStorage.getItem('excelContexto');
+        if (debeAbrir !== 'true' || !ctxRaw) return;
 
-        // Navigate to chat
-        document.querySelector('[data-target="consultas"]').click();
+        // Clean flag
+        sessionStorage.removeItem('abrirConsultasConContexto');
+
+        const ctx = JSON.parse(ctxRaw);
+        window.excelContexto = ctx;
+
+        // Show banner
         renderContextBanner();
         renderSuggestions();
 
         // Welcome message
-        const col1 = headers[0] || 'datos';
-        const col2 = headers[1] || col1;
-        const lastRow = filas.length + 1;
+        const col1 = ctx.columnas[0] || 'datos';
+        const col2 = ctx.columnas[1] || col1;
+        const lastRow = ctx.totalFilas + 1;
         const welcomeMsg =
-            `📊 He cargado tu archivo **${currentFileName}**\n\n` +
-            `**Hoja:** ${sheetLabel} | **${filas.length}** filas | **${headers.length}** columnas\n` +
-            `**Columnas:** ${headers.join(', ')}\n\n` +
-            `Puedo ayudarte con:\n` +
-            `• Calcular totales, promedios, máximos y mínimos **con tus datos reales**\n` +
-            `• Darte fórmulas exactas (ej: =SUMA(A2:A${lastRow}))\n` +
-            `• Comparar columnas, calcular diferencias y porcentajes\n` +
-            `• Responder cualquier duda general de Excel\n\n` +
-            `¿Qué quieres saber?`;
+            `📊 ¡Listo! He cargado tu archivo **${ctx.nombreArchivo}**\n\n` +
+            `**Columnas detectadas:** ${ctx.columnas.join(', ')}\n` +
+            `**Total de filas:** ${ctx.totalFilas}\n\n` +
+            `Puedes preguntarme cualquier cosa, por ejemplo:\n` +
+            `• "¿Cuánto suman los **${col1}**?"\n` +
+            `• "¿Cuál es el promedio de **${col2}**?"\n` +
+            `• "¿Qué fórmula uso para filtrar valores mayores a X?"\n` +
+            `• "Resume todos los datos"\n\n` +
+            `¿Qué quieres saber? 💬`;
 
         chatMessages.innerHTML = '';
         addMessage('ai', formatAIResponse(welcomeMsg));
-        chatMessages.scrollTop = 0;
+
+        // Scroll to top of chat
+        setTimeout(() => {
+            const chatEl = document.querySelector('.chat-container');
+            if (chatEl) chatEl.scrollIntoView({ behavior: 'smooth' });
+            chatMessages.scrollTop = 0;
+        }, 300);
+    }
+
+    // ─────────────────────────────────────────
+    // ASSISTANT BRIDGE — "Consultar IA" button
+    // ─────────────────────────────────────────
+    btnConsultarIA.addEventListener('click', () => {
+        // PASO 1: Capturar datos de la tabla visible
+        const contexto = capturarDatosTabla();
+        if (!contexto) {
+            alert('No hay datos cargados. Sube un archivo primero.');
+            return;
+        }
+
+        // PASO 2: Guardar en múltiples lugares para no perderlo
+        window.excelContexto = contexto;
+        try {
+            localStorage.setItem(`context_${currentUser.email}`, JSON.stringify({ ...contexto, filas: contexto.filas.slice(0, 200) }));
+            localStorage.setItem('excelContexto', JSON.stringify(contexto));
+            sessionStorage.setItem('excelContexto', JSON.stringify(contexto));
+        } catch(e) { /* quota or private mode */ }
+
+        // PASO 3: Marcar que debe abrir el chat con contexto
+        sessionStorage.setItem('abrirConsultasConContexto', 'true');
+
+        // PASO 4: Navegar a la sección Consultas
+        mostrarSeccion('consultas');
     });
 
     clearContextBtn.addEventListener('click', () => {
         window.excelContexto = null;
-        localStorage.removeItem(`context_${currentUser.email}`);
+        try {
+            localStorage.removeItem(`context_${currentUser.email}`);
+            localStorage.removeItem('excelContexto');
+            sessionStorage.removeItem('excelContexto');
+            sessionStorage.removeItem('abrirConsultasConContexto');
+        } catch(e) {}
         renderContextBanner();
         renderSuggestions();
         addMessage('ai', 'Contexto quitado. Ahora responderé consultas generales de Excel 📊');
